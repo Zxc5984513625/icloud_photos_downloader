@@ -1,14 +1,15 @@
-from typing import Any, Dict, NoReturn, Optional, Sequence
-from typing_extensions import override
-import typing
 import inspect
 import json
 import logging
+import typing
+from typing import Any, Dict, NoReturn, Sequence
+
 from requests import Session
+from typing_extensions import override
 
 from pyicloud_ipd.exceptions import (
-    PyiCloudAPIResponseException,
     PyiCloud2SARequiredException,
+    PyiCloudAPIResponseException,
     PyiCloudServiceNotActivatedException,
 )
 from pyicloud_ipd.utils import throw_on_503
@@ -44,9 +45,13 @@ class PyiCloudPasswordFilter(logging.Filter):
 class PyiCloudSession(Session):
     """iCloud session."""
 
-    def __init__(self, service: Any):
+    def __init__(self, service: Any, proxies: Dict[str, str] | None = None):
         self.service = service
         super().__init__()
+        
+        # Configure proxies if provided
+        if proxies:
+            self.proxies.update(proxies)
 
     @override
     def request(self, method: str, url, **kwargs): # type: ignore
@@ -94,8 +99,8 @@ class PyiCloudSession(Session):
 
         if content_type not in json_mimetypes:
             if self.service.session_data.get("apple_rscd") == "401":
-                code: Optional[str] = "401"
-                reason: Optional[str] = "Invalid username/password combination."
+                code: str | None = "401"
+                reason: str | None = "Invalid username/password combination."
                 self._raise_error(code or "Unknown", reason or "Unknown")
 
             return response
@@ -110,7 +115,7 @@ class PyiCloudSession(Session):
 
         if isinstance(data, dict):
             if data.get("hasError"):
-                errors: Optional[Sequence[Dict[str, Any]]] = typing.cast(Optional[Sequence[Dict[str, Any]]], data.get("service_errors"))
+                errors: Sequence[Dict[str, Any]] | None = typing.cast(Sequence[Dict[str, Any]] | None, data.get("service_errors"))
                 # service_errors returns a list of dict
                 #    dict includes the keys: code, title, message, supressDismissal
                 # Assuming a single error for now

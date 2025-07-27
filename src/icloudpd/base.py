@@ -624,6 +624,16 @@ CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
     callback=skip_created_after_generator,
 )
 @click.option(
+    "--http-proxy",
+    help="HTTP proxy to use for requests (e.g., http://proxy.example.com:8080)",
+    metavar="<http_proxy>",
+)
+@click.option(
+    "--https-proxy", 
+    help="HTTPS proxy to use for requests (e.g., https://proxy.example.com:8080)",
+    metavar="<https_proxy>",
+)
+@click.option(
     "--version",
     help="Show the version, commit hash and timestamp",
     is_flag=True,
@@ -678,6 +688,8 @@ def main(
     use_os_locale: bool,
     skip_created_before: datetime.datetime | datetime.timedelta | None,
     skip_created_after: datetime.datetime | datetime.timedelta | None,
+    http_proxy: str | None,
+    https_proxy: str | None,
 ) -> NoReturn:
     """Download all iCloud photos to a local directory"""
 
@@ -890,6 +902,8 @@ def main(
             password_providers,
             mfa_provider,
             status_exchange,
+            http_proxy,
+            https_proxy,
         )
         sys.exit(result)
 
@@ -1311,12 +1325,22 @@ def core(
     password_providers: Dict[str, Tuple[Callable[[str], str | None], Callable[[str, str], None]]],
     mfa_provider: MFAProvider,
     status_exchange: StatusExchange,
+    http_proxy: str | None,
+    https_proxy: str | None,
 ) -> int:
     """Download all iCloud photos to a local directory"""
 
     skip_bar = not os.environ.get("FORCE_TQDM") and (
         only_print_filenames or no_progress_bar or not sys.stdout.isatty()
     )
+    
+    # Configure proxies
+    proxies = {}
+    if http_proxy:
+        proxies['http'] = http_proxy
+    if https_proxy:
+        proxies['https'] = https_proxy
+    
     while True:  # watch with interval & retry
         try:
             icloud = authenticator(
@@ -1333,6 +1357,7 @@ def core(
                 notificator,
                 cookie_directory,
                 os.environ.get("CLIENT_ID"),
+                proxies,
             )
 
             if auth_only:

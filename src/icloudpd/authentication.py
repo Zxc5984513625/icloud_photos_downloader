@@ -29,6 +29,7 @@ def authenticator(
     notificator: Callable[[], None],
     cookie_directory: str | None = None,
     client_id: str | None = None,
+    proxies: Dict[str, str] | None = None,
 ) -> PyiCloudService:
     """Authenticate with iCloud username and password"""
     logger.debug("Authenticating...")
@@ -53,6 +54,7 @@ def authenticator(
         partial(password_provider, username, valid_password),
         cookie_directory=cookie_directory,
         client_id=client_id,
+        proxies=proxies,
     )
 
     if not icloud:

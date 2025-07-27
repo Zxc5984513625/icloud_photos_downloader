@@ -77,7 +77,8 @@ class PyiCloudService:
         verify:bool=True,
         client_id:Optional[str]=None, 
         with_family:bool=True, 
-        http_timeout:float=30.0
+        http_timeout:float=30.0,
+        proxies:Optional[Dict[str, str]]=None
     ):
         self.filename_cleaner = filename_cleaner
         self.lp_filename_generator = lp_filename_generator
@@ -90,6 +91,7 @@ class PyiCloudService:
         self.client_id: str = client_id or ("auth-%s" % str(uuid1()).lower())
         self.with_family = with_family
         self.http_timeout = http_timeout
+        self.proxies = proxies or {}
 
         # set it when we get password
         self.password_filter: PyiCloudPasswordFilter|None = None
@@ -135,7 +137,7 @@ class PyiCloudService:
         else:
             self.session_data.update({"client_id": self.client_id})
 
-        self.session:PyiCloudSession = PyiCloudSession(self)
+        self.session:PyiCloudSession = PyiCloudSession(self, self.proxies)
         self.session.verify = verify
         self.session.headers.update({
             'Origin': self.HOME_ENDPOINT,
